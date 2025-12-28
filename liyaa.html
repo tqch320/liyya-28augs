@@ -8,6 +8,7 @@
     <script src="firebase-config.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;600;900&display=swap" rel="stylesheet">
     <style>
         body {
@@ -2505,58 +2506,89 @@
         }
 
         // --- NEW: FUNGSI DOWNLOAD RAPOR (DIPERBARUI) ---
+        // --- NEW: FUNGSI DOWNLOAD RAPOR (PDF) ---
         window.downloadReport = () => {
             const now = new Date();
             const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
             const timeStr = now.toLocaleTimeString('id-ID');
             
-            let content = `=================================================\n`;
-            content += `           RAPOR PETUALANGAN FISIKA 2D           \n`;
-            content += `=================================================\n\n`;
-            content += `Nama Pemain   : ${state.playerName}\n`;
-            content += `Karakter      : ${state.playerType === 'neko' ? 'Lucy (Neko)' : 'Luke (Star)'}\n`;
-            content += `Waktu Main    : ${dateStr}, ${timeStr}\n`;
-            content += `Total Skor    : ${state.score}\n`;
-            content += `Jawaban Benar : ${state.correctAnswers}\n`;
-            content += `Jawaban Salah : ${state.wrongAnswers}\n\n`;
-            
-            content += `=================================================\n`;
-            content += `                RINCIAN PER LEVEL                \n`;
-            content += `=================================================\n\n`;
+            // Buat HTML untuk PDF
+            let htmlContent = `
+                <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; background: white; color: black;">
+                    <div style="text-align: center; border-bottom: 2px solid #22c55e; padding-bottom: 10px; margin-bottom: 20px;">
+                        <h1 style="color: #22c55e; font-size: 24px; margin: 0;">RAPOR PETUALANGAN FISIKA 2D</h1>
+                        <p style="font-size: 14px; margin: 5px 0;">Physics Adventure - Educational Game</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <h2 style="color: #333; font-size: 18px; margin-bottom: 10px;">Informasi Pemain</h2>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr><td style="padding: 5px; border: 1px solid #ddd;"><strong>Nama Pemain:</strong></td><td style="padding: 5px; border: 1px solid #ddd;">${state.playerName}</td></tr>
+                            <tr><td style="padding: 5px; border: 1px solid #ddd;"><strong>Karakter:</strong></td><td style="padding: 5px; border: 1px solid #ddd;">${state.playerType === 'neko' ? 'Lucy (Neko)' : 'Luke (Star)'}</td></tr>
+                            <tr><td style="padding: 5px; border: 1px solid #ddd;"><strong>Waktu Main:</strong></td><td style="padding: 5px; border: 1px solid #ddd;">${dateStr}, ${timeStr}</td></tr>
+                        </table>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <h2 style="color: #333; font-size: 18px; margin-bottom: 10px;">Ringkasan Hasil</h2>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr><td style="padding: 5px; border: 1px solid #ddd;"><strong>Total Skor:</strong></td><td style="padding: 5px; border: 1px solid #ddd;">${state.score}</td></tr>
+                            <tr><td style="padding: 5px; border: 1px solid #ddd;"><strong>Jawaban Benar:</strong></td><td style="padding: 5px; border: 1px solid #ddd;">${state.correctAnswers}</td></tr>
+                            <tr><td style="padding: 5px; border: 1px solid #ddd;"><strong>Jawaban Salah:</strong></td><td style="padding: 5px; border: 1px solid #ddd;">${state.wrongAnswers}</td></tr>
+                        </table>
+                    </div>
+                    
+                    <div>
+                        <h2 style="color: #333; font-size: 18px; margin-bottom: 10px;">Rincian Per Level</h2>
+            `;
             
             state.levelResults.forEach((res, index) => {
                 const status = res.isCorrect ? "BENAR [✔]" : "SALAH [X]";
+                const statusColor = res.isCorrect ? "#22c55e" : "#ef4444";
                 
-                content += `NO. TANTANGAN : ${res.level}\n`;
-                content += `STATUS        : ${status}\n`;
-                content += `JUMLAH SALAH  : ${res.attempts}\n`;
-                content += `SOAL          : ${res.question}\n`;
-                content += `JAWABAN KAMU  : ${res.userAnswer}\n`;
-                content += `KUNCI JAWABAN : ${res.correctAnswer}\n`;
-                content += `POIN DIPEROLEH: ${res.points > 0 ? '+' + res.points : res.points}\n`;
-                content += `-------------------------------------------------\n`;
+                htmlContent += `
+                    <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; page-break-inside: avoid;">
+                        <h3 style="margin: 0 0 5px 0; font-size: 16px;">Level ${res.level}</h3>
+                        <p style="margin: 2px 0;"><strong>Status:</strong> <span style="color: ${statusColor};">${status}</span></p>
+                        <p style="margin: 2px 0;"><strong>Jumlah Salah:</strong> ${res.attempts}</p>
+                        <p style="margin: 2px 0;"><strong>Soal:</strong> ${res.question}</p>
+                        <p style="margin: 2px 0;"><strong>Jawaban Kamu:</strong> ${res.userAnswer}</p>
+                        <p style="margin: 2px 0;"><strong>Kunci Jawaban:</strong> ${res.correctAnswer}</p>
+                        <p style="margin: 2px 0;"><strong>Poin Diperoleh:</strong> ${res.points > 0 ? '+' + res.points : res.points}</p>
+                    </div>
+                `;
             });
-
-            content += `\nCatatan: \n`;
-            content += `- Jika jawabanmu salah, bandingkan dengan kunci jawaban untuk belajar.\n`;
-            content += `- Fisika itu asik! Teruslah berlatih.\n\n`;
-            content += `Physics Adventure 2D - Educational Game`;
-
-            // Membuat Blob dan Link Download
-            const blob = new Blob([content], { type: 'text/plain' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            // Nama file: Rapor_Nama_Timestamp.txt
-            a.download = `Rapor_Lengkap_${state.playerName.replace(/\s+/g, '_')}.txt`;
             
-            document.body.appendChild(a);
-            a.click();
+            htmlContent += `
+                    </div>
+                    
+                    <div style="margin-top: 20px; text-align: center; font-size: 12px; color: #666;">
+                        <p>Catatan: Jika jawabanmu salah, bandingkan dengan kunci jawaban untuk belajar.</p>
+                        <p>Fisika itu asik! Teruslah berlatih.</p>
+                        <p>Physics Adventure 2D - Educational Game © 2025</p>
+                    </div>
+                </div>
+            `;
             
-            // Bersihkan
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
+            // Buat element sementara
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContent;
+            tempDiv.style.position = 'absolute';
+            tempDiv.style.left = '-9999px';
+            document.body.appendChild(tempDiv);
+            
+            // Generate PDF
+            const options = {
+                margin: 0.5,
+                filename: `Rapor_Lengkap_${state.playerName.replace(/\s+/g, '_')}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+            
+            html2pdf().set(options).from(tempDiv).save().then(() => {
+                document.body.removeChild(tempDiv);
+            });
         };
         
         // --- NEW FUNCTION: SAVE GAME RESULT TO FIREBASE ---
