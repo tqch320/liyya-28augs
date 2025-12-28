@@ -2114,6 +2114,7 @@
                 question: cp.question,
                 isCorrect: correct,
                 points: scoreChange,
+                attempts: state.wrongStreak,  // JUMLAH SALAH SEBELUM BENAR/HANGUS
                 userAnswer: userAnswerDisplay,      // REKAM JAWABAN USER
                 correctAnswer: correctAnswerDisplay // REKAM KUNCI JAWABAN
             });
@@ -2528,6 +2529,7 @@
                 
                 content += `NO. TANTANGAN : ${res.level}\n`;
                 content += `STATUS        : ${status}\n`;
+                content += `JUMLAH SALAH  : ${res.attempts}\n`;
                 content += `SOAL          : ${res.question}\n`;
                 content += `JAWABAN KAMU  : ${res.userAnswer}\n`;
                 content += `KUNCI JAWABAN : ${res.correctAnswer}\n`;
