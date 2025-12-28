@@ -1108,9 +1108,16 @@
             // Triggers
             state.triggers.forEach(t => {
                 if (t.active) {
-                    const dx = p.x - t.x;
-                    const dy = p.y - (getRoadCurve(t.x) + t.y); // Trigger Y relative to curve
-                    if (Math.sqrt(dx*dx + dy*dy) < 20 + t.radius) triggerCheckpoint(t.id);
+                    if (t.id === 10) { // Special handling for finish line
+                        // Check if player has crossed x=9000 and is on the road
+                        if (p.x >= 9000 && Math.abs(p.y - getRoadCurve(p.x)) <= ROAD_HALF) {
+                            triggerCheckpoint(t.id);
+                        }
+                    } else {
+                        const dx = p.x - t.x;
+                        const dy = p.y - (getRoadCurve(t.x) + t.y); // Trigger Y relative to curve
+                        if (Math.sqrt(dx*dx + dy*dy) < 20 + t.radius) triggerCheckpoint(t.id);
+                    }
                 }
             });
 
