@@ -668,6 +668,7 @@
             score: 0,
             correctAnswers: 0, // NEW: Counter Benar
             wrongAnswers: 0,   // NEW: Counter Salah
+            wrongStreak: 0,    // NEW: Counter kesalahan berturut-turut per pertanyaan
             levelResults: [], // NEW: Menyimpan detail hasil per level
             gameActive: false,
             quizActive: false,
@@ -2146,16 +2147,36 @@
 
             } else {
                 state.wrongAnswers++; // TRACK WRONG
-                fb.innerText = `SALAH! 💀 (-5 Poin)`;
-                fb.className = "text-center font-black mt-2 h-auto text-red-600 text-sm";
-                if(synthWrong) synthWrong.triggerAttackRelease("F#3", "0.3");
-                state.score -= 5;
-                document.getElementById('score-display').innerText = state.score;
-                setTimeout(() => {
-                    document.getElementById('quiz-submit-btn').disabled = false;
-                    fb.innerText = `Coba lagi! (Petunjuk: ${feedbackText})`;
-                    fb.className = "text-center font-black mt-2 h-auto text-yellow-600 text-sm";
-                }, 2000);
+                state.wrongStreak++; // Increment kesalahan berturut-turut
+                if (state.wrongStreak >= 3) {
+                    // Hangus: lanjut ke level berikutnya
+                    fb.innerText = `HANGUS! 💀 Pertanyaan dilewati (-5 Poin)`;
+                    fb.className = "text-center font-black mt-2 h-auto text-red-600 text-sm";
+                    if(synthWrong) synthWrong.triggerAttackRelease("F#3", "0.3");
+                    state.score -= 5;
+                    document.getElementById('score-display').innerText = state.score;
+                    // Lanjut seperti benar
+                    setTimeout(() => {
+                        showScreen('none');
+                        const g = state.gates.find(gate => gate.id === cp.id); if(g) g.open = true;
+                        const t = state.triggers.find(tr => tr.id === cp.id); if(t) t.active = false;
+                        startCrossingSequence(cp.visual || 'gate', g ? g.x : state.player.x + 100);
+                        state.currentLevel++;
+                        if(state.currentLevel > state.maxLevel) { state.maxLevel = state.currentLevel; savePlayerData(); }
+                        if(state.currentLevel <= state.checkpoints.length) state.currentCheckpoint = state.checkpoints[state.currentLevel - 1];
+                    }, 1000);
+                } else {
+                    fb.innerText = `SALAH! 💀 (-5 Poin)`;
+                    fb.className = "text-center font-black mt-2 h-auto text-red-600 text-sm";
+                    if(synthWrong) synthWrong.triggerAttackRelease("F#3", "0.3");
+                    state.score -= 5;
+                    document.getElementById('score-display').innerText = state.score;
+                    setTimeout(() => {
+                        document.getElementById('quiz-submit-btn').disabled = false;
+                        fb.innerText = `Coba lagi! (Petunjuk: ${feedbackText})`;
+                        fb.className = "text-center font-black mt-2 h-auto text-yellow-600 text-sm";
+                    }, 2000);
+                }
             }
         };
 
@@ -2277,6 +2298,7 @@
         }
 
         function prepareQuizUI(cp) {
+            state.wrongStreak = 0; // Reset counter kesalahan per pertanyaan
             document.getElementById('quiz-level-num').innerText = state.currentLevel;
             document.getElementById('quiz-question').innerText = cp.question;
             document.getElementById('quiz-feedback').innerText = '';
